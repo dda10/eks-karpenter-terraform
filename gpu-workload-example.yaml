@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-workload
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: gpu-workload
+  template:
+    metadata:
+      labels:
+        app: gpu-workload
+    spec:
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Equal
+        value: "true"
+        effect: NoSchedule
+      nodeSelector:
+        node-type: gpu
+      containers:
+      - name: gpu-container
+        image: nvidia/cuda:11.8-runtime-ubuntu20.04
+        command: ["sleep", "3600"]
+        resources:
+          requests:
+            nvidia.com/gpu: 1
+            cpu: 4
+            memory: 16Gi
+          limits:
+            nvidia.com/gpu: 1
+            cpu: 8
+            memory: 32Gi

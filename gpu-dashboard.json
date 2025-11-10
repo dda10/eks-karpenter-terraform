@@ -1,0 +1,128 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "GPU Cluster Monitoring",
+    "tags": ["gpu", "kubernetes", "karpenter"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "GPU Utilization",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_GPU_UTIL",
+            "legendFormat": "GPU {{gpu}} on {{instance}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "GPU Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_FB_USED / DCGM_FI_DEV_FB_TOTAL * 100",
+            "legendFormat": "GPU {{gpu}} Memory %"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "GPU Temperature",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "DCGM_FI_DEV_GPU_TEMP",
+            "legendFormat": "GPU {{gpu}} Temp"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "celsius"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Node CPU Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "{{instance}} CPU %"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Node Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "{{instance}} Memory %"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Karpenter Node Provisioning",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "karpenter_nodes_total",
+            "legendFormat": "Total Nodes"
+          },
+          {
+            "expr": "karpenter_nodes_allocatable_cpu_cores",
+            "legendFormat": "Allocatable CPU Cores"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Pod GPU Requests vs Limits",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"nvidia_com_gpu\"})",
+            "legendFormat": "GPU Requests"
+          },
+          {
+            "expr": "sum(kube_pod_container_resource_limits{resource=\"nvidia_com_gpu\"})",
+            "legendFormat": "GPU Limits"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Spot Instance Savings",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(karpenter_nodes_total{capacity_type=\"spot\"}) / sum(karpenter_nodes_total) * 100",
+            "legendFormat": "Spot Instance %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
