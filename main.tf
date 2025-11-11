@@ -1,5 +1,4 @@
 terraform {
-  required_version = ">= 1.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -61,6 +60,7 @@ module "vpc" {
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
   public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
 
+
   enable_nat_gateway = true
   enable_vpn_gateway = false
   single_nat_gateway = true
@@ -95,6 +95,9 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
+  # Enable OIDC for IRSA
+  enable_irsa = true
+
   # Cluster access entry
   enable_cluster_creator_admin_permissions = true
 
@@ -114,12 +117,67 @@ module "eks" {
     }
   }
 
+  # Initial managed node group for Karpenter controller
+  eks_managed_node_groups = {
+    initial = {
+      instance_types = ["t3.medium"]
+      min_size       = 1
+      max_size       = 2
+      desired_size   = 1
+
+      # Taint to prevent application pods from scheduling here
+      taints = {
+        system = {
+          key    = "CriticalAddonsOnly"
+          value  = "true"
+          effect = "NO_SCHEDULE"
+        }
+      }
+
+      labels = {
+        role = "system"
+      }
+    }
+  }
+
   # Cluster endpoint configuration
   cluster_endpoint_public_access  = true
-  cluster_endpoint_private_access = true
+  cluster_endpoint_private_access = false
 
   # Cluster logging
   cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+
+  # EKS Addons
+  cluster_addons = {
+    vpc-cni = {
+      before_compute = true
+      most_recent    = true
+    }
+    kube-proxy = {
+      before_compute = true
+      most_recent    = true
+    }
+    coredns = {
+      most_recent    = true
+      before_compute = true
+    }
+    aws-ebs-csi-driver = {
+      addon_version = "v1.52.1-eksbuild.1"
+    }
+    aws-efs-csi-driver = {
+      addon_version = "v2.1.13-eksbuild.1"
+    }
+    eks-pod-identity-agent = {
+      before_compute = true
+      most_recent    = true
+    }
+    metrics-server = {
+      addon_version = "v0.8.0-eksbuild.3"
+    }
+    cert-manager = {
+      addon_version = "v1.19.1-eksbuild.1"
+    }
+  }
 
   tags = {
     Environment              = "production"
@@ -128,78 +186,66 @@ module "eks" {
   }
 }
 
-# Karpenter NodePool for GPU instances
-resource "kubectl_manifest" "karpenter_nodepool" {
-  yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
-    kind: NodePool
-    metadata:
-      name: gpu-nodepool
-    spec:
-      template:
-        metadata:
-          labels:
-            node-type: gpu
-        spec:
-          requirements:
-            - key: karpenter.sh/capacity-type
-              operator: In
-              values: ["spot", "on-demand"]
-            - key: node.kubernetes.io/instance-type
-              operator: In
-              values: ["g5g.xlarge", "g5g.2xlarge", "g5g.4xlarge"]
-          nodeClassRef:
-            apiVersion: karpenter.k8s.aws/v1beta1
-            kind: EC2NodeClass
-            name: gpu-nodeclass
-          taints:
-            - key: nvidia.com/gpu
-              value: "true"
-              effect: NoSchedule
-      limits:
-        cpu: 1000
-      disruption:
-        consolidationPolicy: WhenEmpty
-        consolidateAfter: 30s
-  YAML
+# EBS CSI Driver Pod Identity
+resource "aws_eks_pod_identity_association" "ebs_csi" {
+  cluster_name    = module.eks.cluster_name
+  namespace       = "kube-system"
+  service_account = "ebs-csi-controller-sa"
 
-  depends_on = [
-    module.eks
-  ]
+  role_arn = aws_iam_role.ebs_csi_pod_identity.arn
 }
 
-# Karpenter EC2NodeClass
-resource "kubectl_manifest" "karpenter_nodeclass" {
-  yaml_body = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1beta1
-    kind: EC2NodeClass
-    metadata:
-      name: gpu-nodeclass
-    spec:
-      amiFamily: Bottlerocket
-      subnetSelectorTerms:
-        - tags:
-            karpenter.sh/discovery: ${var.cluster_name}
-      securityGroupSelectorTerms:
-        - tags:
-            karpenter.sh/discovery: ${var.cluster_name}
-      instanceStorePolicy: RAID0
-      userData: |
-        [settings.kubernetes]
-        cluster-name = "${var.cluster_name}"
-        api-server = "${module.eks.cluster_endpoint}"
-        cluster-ca = "${module.eks.cluster_certificate_authority_data}"
-        
-        [settings.kubernetes.node-labels]
-        "node-type" = "gpu"
-        "karpenter.sh/provisioner-name" = "gpu-nodepool"
-        
-        [settings.kubernetes.node-taints]
-        "nvidia.com/gpu" = "true:NoSchedule"
-      role: "KarpenterNodeInstanceProfile"
-  YAML
+resource "aws_iam_role" "ebs_csi_pod_identity" {
+  name = "${var.cluster_name}-ebs-csi-pod-identity"
 
-  depends_on = [
-    module.eks
-  ]
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "pods.eks.amazonaws.com"
+      }
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_policy" {
+  role       = aws_iam_role.ebs_csi_pod_identity.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+# EFS CSI Driver Pod Identity
+resource "aws_eks_pod_identity_association" "efs_csi" {
+  cluster_name    = module.eks.cluster_name
+  namespace       = "kube-system"
+  service_account = "efs-csi-controller-sa"
+
+  role_arn = aws_iam_role.efs_csi_pod_identity.arn
+}
+
+resource "aws_iam_role" "efs_csi_pod_identity" {
+  name = "${var.cluster_name}-efs-csi-pod-identity"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "pods.eks.amazonaws.com"
+      }
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "efs_csi_policy" {
+  role       = aws_iam_role.efs_csi_pod_identity.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy"
 }

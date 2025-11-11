@@ -49,23 +49,6 @@ This Terraform project deploys EKS with Karpenter using the official terraform-a
    kubectl get nodes -w
    ```
 
-## Module Benefits
-
-**terraform-aws-modules/eks advantages:**
-- ✅ **Production-ready**: Battle-tested configurations
-- ✅ **Built-in Karpenter**: Automatic setup and configuration
-- ✅ **Best Practices**: Security and networking optimized
-- ✅ **Simplified Code**: Reduced complexity vs custom resources
-- ✅ **Regular Updates**: Maintained by AWS community
-
-## Cost Optimization
-
-**Your Original Calculator:**
-- 20x g5g.2xlarge On-Demand: $11,880.80/month
-
-**With Karpenter + Spot:**
-- Mixed instances with 70% Spot: ~$3,500-4,000/month
-- **Potential Savings: $7,000-8,000/month**
 
 ## Pod Identity vs IRSA
 

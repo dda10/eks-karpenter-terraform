@@ -97,30 +97,24 @@ resource "aws_iam_instance_profile" "bastion_profile" {
   role = aws_iam_role.bastion_role.name
 }
 
-# Key Pair for SSH access
-resource "aws_key_pair" "bastion_key" {
-  key_name   = "${var.cluster_name}-bastion-key"
-  public_key = var.bastion_public_key
-}
-
 # Bastion Host EC2 Instance (Spot)
 resource "aws_instance" "bastion" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t2.micro"
-  key_name               = aws_key_pair.bastion_key.key_name
+  key_name               = var.bastion_key_name
   vpc_security_group_ids = [aws_security_group.bastion.id]
   subnet_id              = module.vpc.public_subnets[0]
   iam_instance_profile   = aws_iam_instance_profile.bastion_profile.name
 
   associate_public_ip_address = true
 
-  # Use Spot instance for cost savings
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      max_price = "0.005" # ~60% savings vs On-Demand
-    }
-  }
+  # # Use Spot instance for cost savings
+  # instance_market_options {
+  #   market_type = "spot"
+  #   spot_options {
+  #     max_price = "0.005" # ~60% savings vs On-Demand
+  #   }
+  # }
 
   user_data = base64encode(templatefile("${path.module}/bastion-userdata.sh", {
     cluster_name = module.eks.cluster_name
@@ -128,6 +122,6 @@ resource "aws_instance" "bastion" {
   }))
 
   tags = {
-    Name = "${var.cluster_name}-bastion-spot"
+    Name = "${var.cluster_name}-bastion-host"
   }
 }

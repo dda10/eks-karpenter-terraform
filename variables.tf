@@ -7,7 +7,6 @@ variable "aws_region" {
 variable "cluster_name" {
   description = "Name of the EKS cluster"
   type        = string
-  default     = "gpu-karpenter-cluster"
 }
 
 variable "kubernetes_version" {
@@ -22,8 +21,7 @@ variable "enable_monitoring" {
   default     = true
 }
 
-variable "bastion_public_key" {
-  description = "Public key for bastion host SSH access"
+variable "bastion_key_name" {
+  description = "Existing EC2 key pair name for bastion host SSH access"
   type        = string
-  default     = "" # Add your public key here or via terraform.tfvars
 }

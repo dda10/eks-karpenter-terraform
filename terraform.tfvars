@@ -8,6 +8,5 @@ kubernetes_version = "1.33"
 # Monitoring
 enable_monitoring = true
 
-# Bastion Host Configuration
-# Replace with your actual SSH public key
-bastion_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-email@example.com"
+# Bastion Configuration
+bastion_key_name = "dda"
