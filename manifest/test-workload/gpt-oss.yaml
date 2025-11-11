@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpt-oss-20b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-gptoss-20b
+  template:
+    metadata:
+      labels:
+        app: vllm-gptoss-20b
+    spec:
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+      - name: inference-server
+        image: vllm/vllm-openai:gptoss
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        command: [ "vllm", "serve" ]
+        args:
+        - openai/gpt-oss-20b
+        - --gpu-memory-utilization=0.90
+        - --tensor-parallel-size=1
+        - --max-model-len=20000
+        env:
+        - name: VLLM_ATTENTION_BACKEND
+          value: "TRITON_ATTN_VLLM_V1"
+        - name: PORT
+          value: "8000"
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gptoss-service
+spec:
+  selector:
+    app: vllm-gptoss-20b
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP

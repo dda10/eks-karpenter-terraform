@@ -15,12 +15,16 @@ sudo ./aws/install
 # Install helm
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-
-# Configure kubectl for EKS (for ubuntu user)
-# sudo -u ubuntu aws eks update-kubeconfig --region ${region} --name ${cluster_name}
-
-# Configure kubectl for EKS (for root user - SSM sessions)
+# Configure kubectl for EKS - for root user
 aws eks update-kubeconfig --region ${region} --name ${cluster_name}
+
+# Configure kubectl for ubuntu user
+sudo -u ubuntu aws eks update-kubeconfig --region ${region} --name ${cluster_name}
+
+# Configure kubectl for ssm-user (SSM sessions)
+mkdir -p /home/ssm-user/.kube
+aws eks update-kubeconfig --region ${region} --name ${cluster_name} --kubeconfig /home/ssm-user/.kube/config
+chown -R ssm-user:ssm-user /home/ssm-user/.kube
 
 # Install useful tools
 apt install -y git htop tree jq
@@ -55,12 +59,20 @@ Quick commands:
 
 EOF
 
-# Set up bash completion and aliases
+# Set up bash completion and aliases for root
+echo 'source <(kubectl completion bash)' >> /root/.bashrc
+echo 'alias k=kubectl' >> /root/.bashrc
+echo 'complete -F __start_kubectl k' >> /root/.bashrc
+
+# Set up bash completion and aliases for ubuntu user
 echo 'source <(kubectl completion bash)' >> /home/ubuntu/.bashrc
 echo 'alias k=kubectl' >> /home/ubuntu/.bashrc
 echo 'complete -F __start_kubectl k' >> /home/ubuntu/.bashrc
 
-# Also add for root user
-echo 'source <(kubectl completion bash)' >> /root/.bashrc
-echo 'alias k=kubectl' >> /root/.bashrc
-echo 'complete -F __start_kubectl k' >> /root/.bashrc
+# Set up bash completion and aliases for ssm-user
+echo 'source <(kubectl completion bash)' >> /home/ssm-user/.bashrc
+echo 'alias k=kubectl' >> /home/ssm-user/.bashrc
+echo 'complete -F __start_kubectl k' >> /home/ssm-user/.bashrc
+chown ssm-user:ssm-user /home/ssm-user/.bashrc
+
+

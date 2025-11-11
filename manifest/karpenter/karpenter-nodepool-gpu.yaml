@@ -1,0 +1,52 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: gpu-node-pool
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: gpu
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand", "spot"]
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values: ["g5.xlarge", "g5.2xlarge", "g5g.xlarge", "g5g.2xlarge"]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64", "arm64"]
+      
+      # Automatic node rotation every 7 days
+      expireAfter: 168h
+      
+      taints:
+        - key: nvidia.com/gpu
+          value: "true"
+          effect: NoSchedule
+  
+  # Resource limits to prevent runaway costs
+  limits:
+    cpu: 128
+    memory: 512Gi
+  
+  # Automatic consolidation and cleanup
+  disruption:
+    # Consolidate when nodes are empty or underutilized
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    
+    # Wait 5 minutes before consolidating (prevents thrashing)
+    consolidateAfter: 5m
+    
+    # Allow Karpenter to disrupt nodes for optimization
+    budgets:
+      - nodes: "10%"  # Disrupt max 10% of nodes at once
+        reasons:
+          - Underutilized
+          - Empty
+      - nodes: "1"     # Replace 1 node at a time for drift
+        reasons:
+          - Drifted

@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for resources"
   type        = string
-  default     = "ap-southeast-1" # Singapore region from your calculator
+  default     = "us-east-1" # Changed to us-east-1 for G5 instance availability
 }
 
 variable "cluster_name" {
