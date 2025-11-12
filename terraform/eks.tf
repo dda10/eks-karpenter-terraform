@@ -42,14 +42,6 @@ module "eks" {
       labels = {
         "karpenter.sh/controller" = "true"
       }
-
-      taints = {
-        karpenter = {
-          key    = "karpenter.sh/controller"
-          value  = "true"
-          effect = "NO_SCHEDULE"
-        }
-      }
     }
   }
 
@@ -74,16 +66,7 @@ module "eks" {
       })
     }
     kube-proxy = {}
-    coredns = {
-      most_recent = true
-      configuration_values = jsonencode({
-        tolerations = [{
-          key    = "karpenter.sh/controller"
-          value  = "true"
-          effect = "NoSchedule"
-        }]
-      })
-    }
+    coredns    = {}
     aws-ebs-csi-driver = {
       addon_version = "v1.52.1-eksbuild.1"
     }
