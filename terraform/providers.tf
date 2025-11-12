@@ -1,6 +1,15 @@
 terraform {
   required_version = ">= 1.0"
+  cloud {
+    organization = "anhdd01"
+    workspaces {
+      project = "eks-karpenter-terraform"
 
+      tags = {
+        env = "dev"
+      }
+    }
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
