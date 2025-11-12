@@ -28,11 +28,6 @@ resource "helm_release" "kube_prometheus_stack" {
           nodeSelector = {
             "karpenter.sh/controller" = "true"
           }
-          tolerations = [{
-            key    = "karpenter.sh/controller"
-            value  = "true"
-            effect = "NoSchedule"
-          }]
         }
       }
       grafana = {
@@ -48,11 +43,6 @@ resource "helm_release" "kube_prometheus_stack" {
         nodeSelector = {
           "karpenter.sh/controller" = "true"
         }
-        tolerations = [{
-          key    = "karpenter.sh/controller"
-          value  = "true"
-          effect = "NoSchedule"
-        }]
       }
       alertmanager = {
         alertmanagerSpec = {
@@ -72,32 +62,17 @@ resource "helm_release" "kube_prometheus_stack" {
           nodeSelector = {
             "karpenter.sh/controller" = "true"
           }
-          tolerations = [{
-            key    = "karpenter.sh/controller"
-            value  = "true"
-            effect = "NoSchedule"
-          }]
         }
       }
       prometheusOperator = {
         nodeSelector = {
           "karpenter.sh/controller" = "true"
         }
-        tolerations = [{
-          key    = "karpenter.sh/controller"
-          value  = "true"
-          effect = "NoSchedule"
-        }]
       }
       kube-state-metrics = {
         nodeSelector = {
           "karpenter.sh/controller" = "true"
         }
-        tolerations = [{
-          key    = "karpenter.sh/controller"
-          value  = "true"
-          effect = "NoSchedule"
-        }]
       }
     })
   ]

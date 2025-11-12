@@ -118,7 +118,7 @@ resource "aws_instance" "bastion" {
 
   user_data = base64encode(templatefile("${path.module}/bastion-userdata.sh", {
     cluster_name = module.eks.cluster_name
-    region       = var.aws_region
+    region       = local.region
   }))
 
   tags = {

@@ -74,7 +74,7 @@ module "eks" {
       addon_version = "v2.1.13-eksbuild.1"
     }
     eks-pod-identity-agent = {
-      addon_version = "v1.13.6-eksbuild.1"
+      addon_version = "v1.3.9-eksbuild.5"
     }
     metrics-server = {
       addon_version = "v0.8.0-eksbuild.3"
