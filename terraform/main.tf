@@ -34,10 +34,10 @@ module "eks" {
   # Initial managed node group for Karpenter controller
   eks_managed_node_groups = {
 
-    initial-nodegroup = {
+    system-nodegroup = {
       use_name_prefix = false
       name            = "initial-nodegroup"
-      instance_types  = ["t3.medium"] # With prefix mode: 110 pods
+      instance_types  = ["t3.medium"]
       min_size        = 1
       max_size        = 3
       desired_size    = 2
