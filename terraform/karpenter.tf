@@ -34,8 +34,12 @@ resource "helm_release" "karpenter" {
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: ${module.karpenter.iam_role_arn}
+    nodeSelector:
+      karpenter.sh/controller: 'true'
     tolerations:
       - key: CriticalAddonsOnly
+        operator: Exists
+      - key: karpenter.sh/controller
         operator: Exists
         effect: NoSchedule
     EOT

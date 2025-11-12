@@ -7,7 +7,7 @@ module "eks" {
   cluster_version = var.kubernetes_version
 
   vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.public_subnets
+  subnet_ids = module.vpc.private_subnets
 
   # Enable OIDC for IRSA
   enable_irsa = true
@@ -43,17 +43,16 @@ module "eks" {
       desired_size    = 2
       subnet_ids      = module.vpc.private_subnets
 
-      # # Taint to prevent application pods from scheduling here
-      # taints = {
-      #   system = {
-      #     key    = "CriticalAddonsOnly"
-      #     value  = "true"
-      #     effect = "NO_SCHEDULE"
-      #   }
-      # }
-
       labels = {
-        role = "system"
+        "karpenter.sh/controller" = "true"
+      }
+
+      taints = {
+        karpenter = {
+          key    = "karpenter.sh/controller"
+          value  = "true"
+          effect = "NO_SCHEDULE"
+        }
       }
     }
   }
@@ -64,9 +63,7 @@ module "eks" {
   }
 
   # Cluster endpoint configuration
-  cluster_endpoint_public_access  = true
-  cluster_endpoint_private_access = false
-
+  cluster_endpoint_public_access = true
   # Cluster logging
   cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
@@ -88,6 +85,13 @@ module "eks" {
     }
     coredns = {
       most_recent = true
+      configuration_values = jsonencode({
+        tolerations = [{
+          key    = "karpenter.sh/controller"
+          value  = "true"
+          effect = "NoSchedule"
+        }]
+      })
     }
     aws-ebs-csi-driver = {
       addon_version = "v1.52.1-eksbuild.1"

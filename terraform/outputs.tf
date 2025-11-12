@@ -27,3 +27,8 @@ output "kubeconfig_command" {
   description = "Command to update kubeconfig"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
 }
+
+output "grafana_info" {
+  description = "Grafana access information"
+  value       = "Run: kubectl get svc -n monitoring kube-prometheus-stack-grafana | Default credentials: admin/admin"
+}
