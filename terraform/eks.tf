@@ -9,9 +9,6 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  # Enable OIDC for IRSA
-  enable_irsa = true
-
   # Cluster access entry
   enable_cluster_creator_admin_permissions = true
 
@@ -33,7 +30,6 @@ module "eks" {
 
   # Initial managed node group for Karpenter controller
   eks_managed_node_groups = {
-
     system-nodegroup = {
       use_name_prefix = false
       name            = "initial-nodegroup"
@@ -70,8 +66,6 @@ module "eks" {
   # EKS Addons
   cluster_addons = {
     vpc-cni = {
-      before_compute = true
-      most_recent    = true
       configuration_values = jsonencode({
         env = {
           ENABLE_PREFIX_DELEGATION = "true"
@@ -79,10 +73,7 @@ module "eks" {
         }
       })
     }
-    kube-proxy = {
-      before_compute = true
-      most_recent    = true
-    }
+    kube-proxy = {}
     coredns = {
       most_recent = true
       configuration_values = jsonencode({
@@ -100,8 +91,7 @@ module "eks" {
       addon_version = "v2.1.13-eksbuild.1"
     }
     eks-pod-identity-agent = {
-      before_compute = true
-      most_recent    = true
+      addon_version = "v1.13.6-eksbuild.1"
     }
     metrics-server = {
       addon_version = "v0.8.0-eksbuild.3"

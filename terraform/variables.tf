@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for resources"
   type        = string
-  default     = "us-east-1" # Changed to us-east-1 for G5 instance availability
+  default     = "us-east-1"
 }
 
 variable "cluster_name" {
@@ -12,7 +12,6 @@ variable "cluster_name" {
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.33"
 }
 
 variable "enable_monitoring" {
