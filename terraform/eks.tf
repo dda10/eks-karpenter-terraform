@@ -51,7 +51,8 @@ module "eks" {
   }
 
   # Cluster endpoint configuration
-  cluster_endpoint_public_access = true
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = false
   # Cluster logging
   cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 

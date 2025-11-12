@@ -6,6 +6,8 @@ resource "helm_release" "kube_prometheus_stack" {
   namespace        = "monitoring"
   create_namespace = true
   version          = "65.0.0"
+  timeout          = 600
+  wait             = true
 
   values = [
     yamlencode({
@@ -89,6 +91,8 @@ resource "helm_release" "dcgm_exporter" {
   namespace        = "monitoring"
   create_namespace = false
   version          = "3.4.2"
+  timeout          = 300
+  wait             = true
 
   values = [
     yamlencode({

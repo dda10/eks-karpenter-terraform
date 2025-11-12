@@ -25,6 +25,8 @@ resource "helm_release" "karpenter" {
   repository = "oci://public.ecr.aws/karpenter"
   chart      = "karpenter"
   version    = "1.0.6"
+  timeout    = 300
+  wait       = true
 
   values = [
     <<-EOT
