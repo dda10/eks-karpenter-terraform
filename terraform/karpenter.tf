@@ -51,9 +51,9 @@ resource "kubectl_manifest" "karpenter_nodepool_gpu" {
   depends_on = [helm_release.karpenter]
 }
 
-# GPU EC2NodeClass
+# GPU EC2NodeClass - Choose between AL2023 or Bottlerocket
 resource "kubectl_manifest" "karpenter_nodeclass_gpu" {
-  yaml_body = templatefile("${path.module}/../manifest/karpenter/karpenter-nodeclass-gpu.yaml", {
+  yaml_body = templatefile("${path.module}/../manifest/karpenter/karpenter-nodeclass-gpu-bottlerocket.yaml", {
     node_iam_role_name = module.karpenter.node_iam_role_name
     cluster_name       = var.cluster_name
   })

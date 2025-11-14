@@ -3,9 +3,9 @@ kind: EC2NodeClass
 metadata:
   name: gpu
 spec:
-  amiFamily: AL2
+  amiFamily: Bottlerocket
   amiSelectorTerms:
-    - name: "amazon-eks-gpu-node-*"
+    - name: "bottlerocket-aws-k8s-*-nvidia-*"
   role: ${node_iam_role_name}
   subnetSelectorTerms:
     - tags:

@@ -107,15 +107,6 @@ resource "aws_instance" "bastion" {
   iam_instance_profile   = aws_iam_instance_profile.bastion_profile.name
 
   associate_public_ip_address = true
-
-  # # Use Spot instance for cost savings
-  # instance_market_options {
-  #   market_type = "spot"
-  #   spot_options {
-  #     max_price = "0.005" # ~60% savings vs On-Demand
-  #   }
-  # }
-
   user_data = base64encode(templatefile("${path.module}/bastion-userdata.sh", {
     cluster_name = module.eks.cluster_name
     region       = local.region

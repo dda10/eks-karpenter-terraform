@@ -27,9 +27,6 @@ resource "helm_release" "kube_prometheus_stack" {
               }
             }
           }
-          nodeSelector = {
-            "karpenter.sh/controller" = "true"
-          }
         }
       }
       grafana = {
@@ -41,9 +38,6 @@ resource "helm_release" "kube_prometheus_stack" {
         }
         service = {
           type = "LoadBalancer"
-        }
-        nodeSelector = {
-          "karpenter.sh/controller" = "true"
         }
       }
       alertmanager = {
@@ -61,25 +55,78 @@ resource "helm_release" "kube_prometheus_stack" {
               }
             }
           }
-          nodeSelector = {
-            "karpenter.sh/controller" = "true"
-          }
-        }
-      }
-      prometheusOperator = {
-        nodeSelector = {
-          "karpenter.sh/controller" = "true"
-        }
-      }
-      kube-state-metrics = {
-        nodeSelector = {
-          "karpenter.sh/controller" = "true"
         }
       }
     })
   ]
 
   depends_on = [module.eks]
+}
+
+# NVIDIA Device Plugin Helm Chart
+resource "helm_release" "nvidia_device_plugin" {
+  name       = "nvdp"
+  repository = "https://nvidia.github.io/k8s-device-plugin"
+  chart      = "nvidia-device-plugin"
+  version    = "0.17.1"
+  namespace  = "nvidia-device-plugin"
+
+  create_namespace = true
+
+  values = [
+    yamlencode({
+      gfd = {
+        enabled = true
+      }
+      nfd = {
+        enabled = true
+      }
+      affinity = {
+        nodeAffinity = {
+          requiredDuringSchedulingIgnoredDuringExecution = {
+            nodeSelectorTerms = [
+              {
+                matchExpressions = [
+                  {
+                    key      = "karpenter.k8s.aws/instance-gpu-manufacturer"
+                    operator = "In"
+                    values   = ["nvidia"]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    })
+  ]
+
+  depends_on = [
+    module.eks,
+    module.karpenter
+  ]
+}
+
+# Karpenter GPU NodeClass
+resource "kubectl_manifest" "gpu_nodeclass" {
+  yaml_body = templatefile("${path.module}/../manifest/karpenter/karpenter-nodeclass-gpu.yaml", {
+    cluster_name       = var.cluster_name
+    node_iam_role_name = module.karpenter.node_iam_role_name
+  })
+
+  depends_on = [
+    module.karpenter,
+    helm_release.nvidia_device_plugin
+  ]
+}
+
+# Karpenter GPU NodePool
+resource "kubectl_manifest" "gpu_nodepool" {
+  yaml_body = file("${path.module}/../manifest/karpenter/karpenter-nodepool-gpu.yaml")
+
+  depends_on = [
+    kubectl_manifest.gpu_nodeclass
+  ]
 }
 
 
@@ -105,5 +152,5 @@ resource "helm_release" "dcgm_exporter" {
     })
   ]
 
-  depends_on = [helm_release.kube_prometheus_stack]
+  depends_on = [helm_release.kube_prometheus_stack, helm_release.nvidia_device_plugin]
 }

@@ -12,13 +12,13 @@ spec:
       requirements:
         - key: karpenter.sh/capacity-type
           operator: In
-          values: ["on-demand", "spot"]
+          values: ["spot", "on-demand"]
         - key: node.kubernetes.io/instance-type
           operator: In
-          values: ["g5.xlarge", "g5.2xlarge", "g5g.xlarge", "g5g.2xlarge"]
+          values: ["g5.xlarge", "g5.2xlarge", "g5.4xlarge"]
         - key: kubernetes.io/arch
           operator: In
-          values: ["amd64", "arm64"]
+          values: ["amd64"]
       
       # Automatic node rotation every 7 days
       expireAfter: 168h
@@ -38,7 +38,7 @@ spec:
     # Consolidate when nodes are empty or underutilized
     consolidationPolicy: WhenEmptyOrUnderutilized
     
-    # Wait 5 minutes before consolidating (prevents thrashing)
+    # Wait 5 minutes before consolidating
     consolidateAfter: 5m
     
     # Allow Karpenter to disrupt nodes for optimization

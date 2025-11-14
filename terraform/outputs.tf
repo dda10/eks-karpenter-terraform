@@ -32,3 +32,13 @@ output "grafana_info" {
   description = "Grafana access information"
   value       = "Run: kubectl get svc -n monitoring kube-prometheus-stack-grafana | Default credentials: admin/admin"
 }
+
+output "nvidia_device_plugin_status" {
+  description = "NVIDIA Device Plugin deployment status"
+  value       = helm_release.nvidia_device_plugin.status
+}
+
+output "gpu_test_command" {
+  description = "Command to test GPU workload"
+  value       = "kubectl apply -f ../manifest/test-workload/gpu-test-pod.yaml && kubectl logs gpu-test"
+}
